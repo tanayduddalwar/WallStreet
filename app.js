@@ -1,15 +1,49 @@
 const express = require('express');
-
+const { PrismaClient } = require('@prisma/client'); // Import Prisma Client
 const bodyParser = require('body-parser');
+
+const prisma = new PrismaClient(); // Initialize Prisma Client
 
 const app = express();
 app.use(bodyParser.json());
 
-// Add an order
 app.post('/add_order', async (req, res) => {
   const { order_id, time, order_type, quantity, price, companyId, userId } = req.body;
 
   try {
+    // Ensure companyId and userId are valid integers
+    const companyIdNum = parseInt(companyId, 10);
+    const userIdNum = parseInt(userId, 10);
+
+    if (isNaN(companyIdNum) || isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid companyId or userId' });
+    }
+
+    // Log values for debugging
+    console.log('companyId:', companyIdNum);
+    console.log('userId:', userIdNum);
+
+    // Check if the company exists
+    const company = await prisma.company.findUnique({
+      where: {
+        id: companyIdNum, // Ensure companyId is used here
+      },
+    });
+
+    if (!company) {
+      return res.status(400).json({ error: 'Company not found' });
+    }
+
+    // Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userIdNum }, // Ensure userId is used here
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    // Create the order
     const newOrder = await prisma.order.create({
       data: {
         order_id,
@@ -17,17 +51,20 @@ app.post('/add_order', async (req, res) => {
         order_type,
         quantity,
         price,
-        companyId,
-        userId,
+        companyId: companyIdNum,
+        userId: userIdNum,
       },
     });
 
-    res.status(200).json({ message: 'Order added successfully', order: newOrder });
+    res.status(201).json({ message: 'Order created successfully', order: newOrder });
   } catch (error) {
-    console.error('Error adding order:', error);
-    res.status(500).json({ error: 'Failed to add order' });
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Failed to add order', details: error.message });
   }
 });
+
+
+
 
 // Fetch orders for a company
 app.get('/orders/:companyId', async (req, res) => {

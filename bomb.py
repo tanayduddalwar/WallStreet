@@ -1,57 +1,85 @@
 import requests
 import random
+import uuid
 import time
-from datetime import datetime
 
-# Base URL of the application
-BASE_URL = "http://localhost:3000"
+# Define API endpoint
+API_URL = "http://127.0.0.1:3000/add_order"
 
-# Number of orders to generate
-NUM_ORDERS = 10
+# Ranges for random order data
+PRICE_RANGE = (400, 500)  # Random prices between 400 and 500
+QUANTITY_RANGE = (1, 50)  # Random quantities between 1 and 50
 
-# Companies in the database (ensure IDs match your database)
-COMPANIES = [1, 2, 3, 4]
+# Number of orders to bombard
+TOTAL_ORDERS = 10
+DELAY = 0.05  # Delay between requests in seconds (optional)
 
-# Random order types
-ORDER_TYPES = ["buy", "sell"]
+# List of dummy companies and their associated IDs
+companies = [
+    {"id": 1, "name": "Google"},
+    {"id": 2, "name": "Facebook"},
+    {"id": 3, "name": "Instagram"},
+    {"id": 4, "name": "Spotify"},
+    {"id": 5, "name": "Dropbox"},
+    {"id": 6, "name": "Reddit"},
+    {"id": 7, "name": "Netflix"},
+    {"id": 8, "name": "Pinterest"},
+    {"id": 9, "name": "Quora"},
+    {"id": 10, "name": "YouTube"},
+    {"id": 11, "name": "Lyft"},
+    {"id": 12, "name": "Uber"},
+    {"id": 13, "name": "LinkedIn"},
+    {"id": 14, "name": "Slack"},
+    {"id": 15, "name": "Etsy"},
+    {"id": 16, "name": "Mozilla"},
+    {"id": 17, "name": "NASA"},
+    {"id": 18, "name": "IBM"},
+    {"id": 19, "name": "Intel"},
+    {"id": 20, "name": "Microsoft"},
+]
+users=[
+    {"id": 1,
+        "name": 'John Doe',
+        "email": 'johndoe@example.com',
+        "password": 'password123', 
+      },
+      {
+       "id": 2,
+        "name": 'Jane Smith',
+        "email": 'janesmith@example.com',
+        "password": 'password123', 
+      },
 
-def generate_order():
-    """
-    Generate a random order for testing.
-    """
-    return {
-        "order_id": f"order_{random.randint(1000, 9999)}",
-        "time": datetime.utcnow().isoformat() + "Z",  # Current UTC timestamp
-        "order_type": random.choice(ORDER_TYPES),
-        "quantity": round(random.uniform(1, 1000), 2),  # Random quantity
-        "price": round(random.uniform(10, 10000), 2),  # Random price
-        "company_id": random.choice(COMPANIES)
+]
+
+# Generate and send orders
+for i in range(TOTAL_ORDERS):
+    # Randomly select a company
+    company = random.choice(companies)
+    user=random.choice(users)
+
+    # Generate a random order
+    order = {
+        "companyId": company["id"],  # Correct field name
+        "userId": user["id"],        # Include userId
+        "order_id": str(uuid.uuid4()),  # Unique order ID
+        "time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),  # Formatting as ISO 8601
+        "order_type": random.choice(["buy", "sell"]),  # Random order type
+        "quantity": random.randint(*QUANTITY_RANGE),   # Random quantity
+        "price": random.randint(*PRICE_RANGE),         # Random price
     }
 
-def send_order(order):
-    """
-    Send a single order to the server.
-    """
-    try:
-        response = requests.post(f"{BASE_URL}/add_order", json=order)
-        if response.status_code == 200:
-            print(f"Order sent successfully: {order['order_id']}")
-        else:
-            print(f"Failed to send order {order['order_id']}: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"Error sending order {order['order_id']}: {e}")
+    # Print the order to debug
+    print(f"Sending order {i+1}/{TOTAL_ORDERS}: {order}")
 
-def bomb_server():
-    """
-    Bomb the server with multiple orders.
-    """
-    print(f"Starting bomb test with {NUM_ORDERS} orders...")
-    for _ in range(NUM_ORDERS):
-        order = generate_order()
-        send_order(order)
-        # Optionally, add a short delay between requests to simulate real-world usage
-        time.sleep(0.01)  # 10ms delay
-    print("Bomb test completed!")
+    # Send the order to the API
+    response = requests.post(API_URL, json=order)
 
-if __name__ == "__main__":
-    bomb_server()
+    # Print response status and data for debugging
+    if response.status_code in [200, 201]:
+        print(f"Order {i+1}/{TOTAL_ORDERS} added successfully: {order}")
+    else:
+        print(f"Failed to add order {i+1}/{TOTAL_ORDERS}: {response.status_code} - {response.json()}")
+
+    # Optional: Delay to avoid overloading the server
+    time.sleep(DELAY)

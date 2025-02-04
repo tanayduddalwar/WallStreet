@@ -64,3 +64,4 @@ To start the order book matching engine, execute the following commands **in ord
 
 For any issues, check the logs or restart Redis and RabbitMQ before re-running the scripts.
 
+![Alt text](architecture.png)
